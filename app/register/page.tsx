@@ -11,6 +11,8 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
   const resolvedSearchParams = (await searchParams) ?? {};
   const error = resolvedSearchParams.error;
 
+  console.log("[BOSS] Render register page", { hasError: Boolean(error) });
+
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-12">
       <div className="card-shadow w-full max-w-3xl rounded-[32px] bg-white p-6 sm:p-10">

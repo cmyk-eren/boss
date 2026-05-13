@@ -11,6 +11,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const error = resolvedSearchParams.error;
 
+  console.log("[BOSS] Render login page", { hasError: Boolean(error) });
+
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-12">
       <div className="card-shadow grid w-full max-w-5xl overflow-hidden rounded-[32px] bg-white lg:grid-cols-[1.1fr_0.9fr]">
