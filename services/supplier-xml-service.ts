@@ -107,6 +107,8 @@ const parser = new XMLParser({
 });
 
 const XML_FETCH_TIMEOUT_MS = 30_000;
+const SUPPLIER_XML_RELAY_URL = process.env.SUPPLIER_XML_RELAY_URL?.trim() || null;
+const SUPPLIER_XML_RELAY_TOKEN = process.env.SUPPLIER_XML_RELAY_TOKEN?.trim() || null;
 
 function buildXmlFetchHeaders(sourceUrl: string) {
   const url = new URL(sourceUrl);
@@ -166,6 +168,42 @@ async function fetchXmlSource(sourceUrl: string) {
     } catch (error) {
       lastError = error instanceof Error ? error : new Error("XML fetch başarısız.");
       console.error("[BOSS] XML fetch attempt failed:", attempt.label, lastError.message);
+    }
+  }
+
+  if (SUPPLIER_XML_RELAY_URL) {
+    try {
+      console.log("[BOSS] Trying supplier XML relay fallback");
+      const relayResponse = await fetch(SUPPLIER_XML_RELAY_URL, {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+          ...(SUPPLIER_XML_RELAY_TOKEN
+            ? { Authorization: `Bearer ${SUPPLIER_XML_RELAY_TOKEN}` }
+            : {}),
+        },
+        body: JSON.stringify({ sourceUrl }),
+        signal: AbortSignal.timeout(XML_FETCH_TIMEOUT_MS),
+      });
+
+      if (!relayResponse.ok) {
+        throw new Error(`Relay XML isteği başarısız. HTTP ${relayResponse.status}`);
+      }
+
+      const contentType = relayResponse.headers.get("content-type") || "";
+      const xml = contentType.includes("application/json")
+        ? ((await relayResponse.json()) as { xml?: string }).xml || ""
+        : await relayResponse.text();
+
+      if (!xml.trim()) {
+        throw new Error("Relay boş XML döndürdü.");
+      }
+
+      return xml;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("Relay XML fetch başarısız.");
+      console.error("[BOSS] XML relay attempt failed:", lastError.message);
     }
   }
 

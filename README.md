@@ -21,6 +21,8 @@ AUTH_SECRET="uzun-ve-rastgele-bir-secret"
 ENCRYPTION_KEY="uzun-ve-rastgele-bir-sifreleme-anahtari"
 NEXT_PUBLIC_APP_URL="https://alanadiniz.com"
 CRON_SECRET="uzun-ve-rastgele-bir-cron-secret"
+SUPPLIER_XML_RELAY_URL="https://your-worker.example.workers.dev"
+SUPPLIER_XML_RELAY_TOKEN="uzun-ve-rastgele-bir-relay-token"
 ```
 
 ## Gelistirme

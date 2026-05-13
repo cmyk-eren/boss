@@ -68,6 +68,18 @@ DATABASE_ACQUIRE_TIMEOUT_MS=10000
 DATABASE_IDLE_TIMEOUT_MS=1800000
 ```
 
+Opsiyonel supplier XML relay:
+
+```env
+SUPPLIER_XML_RELAY_URL=https://your-worker.example.workers.dev
+SUPPLIER_XML_RELAY_TOKEN=uzun-ve-rastgele-bir-relay-token
+```
+
+Not:
+
+- Eger tedarikci sunucusu Hostinger IP'sine `403` donuyorsa, uygulama ayni XML linkini bu relay uzerinden canli cekebilir.
+- Hazir Cloudflare Worker sablonu: `deploy/cloudflare/supplier-xml-relay/worker.mjs`
+
 ## 6. Ilk Veritabani Kurulumu
 
 Deploy sonrasi terminal veya startup komutu asamasinda bir kez:
