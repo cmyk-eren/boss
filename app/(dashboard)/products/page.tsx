@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { EmptyState } from "@/components/common/EmptyState";
 import { Header } from "@/components/layout/Header";
+import { ArchivedProductsDeleteButton } from "@/components/products/ArchivedProductsDeleteButton";
 import { ProductCostEditor } from "@/components/products/ProductCostEditor";
 import { ProductCostImport } from "@/components/products/ProductCostImport";
 import { SupplierFeedManager } from "@/components/products/SupplierFeedManager";
@@ -90,6 +91,7 @@ export default async function ProductsPage({
                 Satış fiyatı, stok ve ürün maliyeti yönetimi
               </p>
             </div>
+            <ArchivedProductsDeleteButton storeId={context.activeStore.id} />
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-100 text-sm">
