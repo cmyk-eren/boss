@@ -6,6 +6,7 @@
     "dev": "next dev",
     "prebuild": "node -e \"require('fs').rmSync('.next',{ recursive: true, force: true })\"",
     "build": "next build --webpack && node scripts/prepare-standalone.mjs",
+    "build:hostinger": "npm run db:push && npm run build",
     "start": "node scripts/start-hostinger.mjs",
     "lint": "eslint .",
     "postinstall": "prisma generate",

@@ -20,5 +20,14 @@ export function formatAuthError(error: unknown, fallbackMessage: string) {
     return "Veritabani bulunamadi. Hostinger MySQL veritabani adini ve DATABASE_URL ayarini kontrol edin.";
   }
 
+  if (
+    loweredMessage.includes("does not exist in the current database") ||
+    loweredMessage.includes("table `user` doesn't exist") ||
+    loweredMessage.includes("table 'user' doesn't exist") ||
+    loweredMessage.includes("table user does not exist")
+  ) {
+    return "Veritabani baglantisi kuruldu ancak uygulama tablolari henuz olusmamis. Deploy oncesi Prisma tablolarinin olusturulmasi gerekiyor.";
+  }
+
   return message || fallbackMessage;
 }
