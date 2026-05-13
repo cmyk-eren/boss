@@ -1,14 +1,34 @@
+type TrendyolErrorPayload = {
+  message?: string;
+  exception?: string;
+  errors?: Array<{
+    key?: string;
+    message?: string;
+    errorCode?: string;
+  }>;
+};
+
+export function parseTrendyolError(raw: string) {
+  try {
+    return JSON.parse(raw) as TrendyolErrorPayload;
+  } catch {
+    return null;
+  }
+}
+
+export function isTrendyolProductListEmptyError(raw: string) {
+  const parsed = parseTrendyolError(raw);
+  const firstError = parsed?.errors?.[0];
+
+  return Boolean(firstError?.key?.startsWith("approved.product"));
+}
+
 export function formatTrendyolError(raw: string) {
   try {
-    const parsed = JSON.parse(raw) as {
-      message?: string;
-      exception?: string;
-      errors?: Array<{
-        key?: string;
-        message?: string;
-        errorCode?: string;
-      }>;
-    };
+    const parsed = parseTrendyolError(raw);
+    if (!parsed) {
+      return raw;
+    }
 
     const firstError = parsed.errors?.[0];
 
@@ -18,6 +38,10 @@ export function formatTrendyolError(raw: string) {
 
     if (firstError?.errorCode === "INVALID_SIZE" || firstError?.key === "approved.products.filter.size.invalid") {
       return "Trendyol senkronizasyon isteği reddedildi: ürün listeleme sayfa boyutu sınırı aşıldı. Uygulama tarafında düzeltildi; senkronizasyonu tekrar çalıştırabilirsiniz.";
+    }
+
+    if (isTrendyolProductListEmptyError(raw)) {
+      return "Trendyol bu mağaza için onaylı ürün bulamadı.";
     }
 
     if (firstError?.message) {

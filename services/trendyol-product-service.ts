@@ -1,6 +1,6 @@
 import { CostSource, Prisma } from "@prisma/client";
 
-import { formatTrendyolError } from "@/lib/trendyol-errors";
+import { formatTrendyolError, isTrendyolProductListEmptyError } from "@/lib/trendyol-errors";
 import { prisma } from "@/lib/prisma";
 import { toNumber } from "@/lib/utils";
 import { createNotification } from "@/services/notification-service";
@@ -40,8 +40,8 @@ type TrendyolBatchResult = {
 };
 
 const ARCHIVED_DELETE_CHUNK_SIZE = 1000;
-const BATCH_RESULT_POLL_ATTEMPTS = 8;
-const BATCH_RESULT_POLL_INTERVAL_MS = 2_000;
+const BATCH_RESULT_POLL_ATTEMPTS = 2;
+const BATCH_RESULT_POLL_INTERVAL_MS = 1_500;
 
 function mapProductImage(product: Record<string, unknown>) {
   const images = product.images;
@@ -117,36 +117,46 @@ async function listArchivedProductBarcodes(
   let nextPageToken: string | undefined;
   const barcodes = new Set<string>();
 
-  do {
-    const response = await client.request<TrendyolProductListResponse>(
-      `/integration/product/sellers/${supplierId}/products/approved`,
-      {
-        query: {
-          page: nextPageToken ? undefined : page,
-          size: 100,
-          nextPageToken,
-          status: "archived",
+  try {
+    do {
+      const response = await client.request<TrendyolProductListResponse>(
+        `/integration/product/sellers/${supplierId}/products/approved`,
+        {
+          query: {
+            page: nextPageToken ? undefined : page,
+            size: 100,
+            nextPageToken,
+            status: "archived",
+          },
         },
-      },
-    );
+      );
 
-    collectProductBarcodes(response.content ?? []).forEach((barcode) => barcodes.add(barcode));
+      collectProductBarcodes(response.content ?? []).forEach((barcode) => barcodes.add(barcode));
 
-    const hasPageContinuation =
-      typeof response.totalPages === "number" &&
-      typeof response.page === "number" &&
-      response.page + 1 < response.totalPages;
+      const hasPageContinuation =
+        typeof response.totalPages === "number" &&
+        typeof response.page === "number" &&
+        response.page + 1 < response.totalPages;
 
-    if (hasPageContinuation) {
-      page = (response.page ?? page) + 1;
-      nextPageToken = undefined;
-    } else if (response.nextPageToken) {
-      nextPageToken = response.nextPageToken;
-    } else {
-      nextPageToken = undefined;
-      page = 0;
+      if (hasPageContinuation) {
+        page = (response.page ?? page) + 1;
+        nextPageToken = undefined;
+      } else if (response.nextPageToken) {
+        nextPageToken = response.nextPageToken;
+      } else {
+        nextPageToken = undefined;
+        page = 0;
+      }
+    } while (page > 0 || nextPageToken);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+
+    if (isTrendyolProductListEmptyError(message)) {
+      return [];
     }
-  } while (page > 0 || nextPageToken);
+
+    throw error;
+  }
 
   return Array.from(barcodes);
 }
@@ -278,13 +288,31 @@ export async function syncProducts(storeId: string, userId: string) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Ürün senkronizasyonu başarısız.";
 
+    if (isTrendyolProductListEmptyError(message)) {
+      await setIntegrationStatus(storeId, {
+        status: "CONNECTED",
+        lastSyncAt: new Date(),
+        lastSuccessfulSyncAt: new Date(),
+        lastError: null,
+      });
+
+      await createNotification({
+        userId,
+        type: "INFO",
+        title: "Ürün senkronizasyonu tamamlandı",
+        message: `${store.name} mağazasında onaylı ürün bulunamadı.`,
+      });
+
+      return 0;
+    }
+
     await setIntegrationStatus(storeId, {
       status: "ERROR",
       lastSyncAt: new Date(),
-      lastError: message,
+      lastError: formatTrendyolError(message),
     });
 
-    throw error;
+    throw new Error(formatTrendyolError(message));
   }
 }
 

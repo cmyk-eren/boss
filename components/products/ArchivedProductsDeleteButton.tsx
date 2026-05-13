@@ -43,8 +43,17 @@ function buildMessage(payload: CleanupResponse): MessageState {
     ? ` İlk hata: ${payload.failures[0].barcode} - ${payload.failures[0].message}`
     : "";
 
+  if (payload.pending > 0 && payload.failed === 0) {
+    return {
+      type: "info",
+      text:
+        `${payload.found} arşiv ürün bulundu. ${payload.deleted} ürün anında doğrulandı, ` +
+        `${payload.pending} ürün Trendyol silme kuyruğuna bırakıldı. Birkaç dakika sonra senkronize edin.${failureDetail}`,
+    };
+  }
+
   return {
-    type: payload.deleted > 0 ? "success" : "error",
+    type: payload.deleted > 0 || payload.pending > 0 ? "info" : "error",
     text:
       `${payload.found} arşiv ürün bulundu, ${payload.deleted} silindi, ` +
       `${payload.failed} başarısız, ${payload.pending} beklemede.${failureDetail}`,
@@ -106,10 +115,11 @@ export function ArchivedProductsDeleteButton({
         className="inline-flex h-11 items-center gap-2 rounded-2xl bg-rose-600 px-4 text-sm font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
       >
         {pending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-        {pending ? "Arşiv siliniyor..." : "Arşivdekileri Sil"}
+        {pending ? "Trendyol arşivi taranıyor..." : "Trendyol Arşivini Temizle"}
       </button>
-      <p className="text-right text-xs text-slate-400">
-        Sadece Trendyol&apos;da arşivlenmiş ürünler hedeflenir.
+      <p className="max-w-[380px] text-right text-xs text-slate-400">
+        Sadece Trendyol&apos;daki arşivlenmiş onaylı ürünleri hedefler. Üst listedeki `DRAFT`
+        XML ürünlerini silmez.
       </p>
       {message ? (
         <div
