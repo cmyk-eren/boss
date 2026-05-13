@@ -551,6 +551,7 @@ export async function syncSupplierFeed(
   userId: string,
   input: {
     sourceUrl?: string;
+    xmlContent?: string;
     name?: string;
     defaultCargoCompanyId?: number | null;
     defaultShipmentAddressId?: number | null;
@@ -565,11 +566,17 @@ export async function syncSupplierFeed(
   }
 
   const currentFeed = await getLatestFeed(storeId);
-  const sourceUrl = input.sourceUrl?.trim() || currentFeed?.sourceUrl;
+  const xmlContent = input.xmlContent?.trim() || null;
+  const sourceUrl =
+    input.sourceUrl?.trim() ||
+    currentFeed?.sourceUrl ||
+    (xmlContent ? "manual://uploaded-xml" : undefined);
 
-  if (!sourceUrl) {
-    throw new Error("XML linki zorunludur.");
+  if (!sourceUrl && !xmlContent) {
+    throw new Error("XML linki, dosyası veya içeriği zorunludur.");
   }
+
+  const feedSourceUrl = sourceUrl || "manual://uploaded-xml";
 
   const syncLog = await prisma.syncLog.create({
     data: {
@@ -577,24 +584,24 @@ export async function syncSupplierFeed(
       direction: SyncDirection.IMPORT,
       scope: SyncScope.PRODUCTS,
       status: SyncStatus.STARTED,
-      metadata: {
-        source: "supplier-xml",
-        sourceUrl,
+        metadata: {
+          source: "supplier-xml",
+          sourceUrl: feedSourceUrl,
+        },
       },
-    },
-  });
+    });
 
   const feed = await prisma.supplierFeed.upsert({
     where: {
       storeId_sourceUrl: {
         storeId,
-        sourceUrl,
+        sourceUrl: feedSourceUrl,
       },
     },
     create: {
       storeId,
       name: input.name?.trim() || "Tedarikçi XML Feed",
-      sourceUrl,
+      sourceUrl: feedSourceUrl,
       defaultCargoCompanyId: input.defaultCargoCompanyId ?? null,
       defaultShipmentAddressId: input.defaultShipmentAddressId ?? null,
       defaultReturningAddressId: input.defaultReturningAddressId ?? null,
@@ -616,7 +623,12 @@ export async function syncSupplierFeed(
   });
 
   try {
-    const xml = await fetchXmlSource(sourceUrl);
+    const xml = xmlContent || (sourceUrl ? await fetchXmlSource(sourceUrl) : null);
+
+    if (!xml) {
+      throw new Error("İşlenecek XML içeriği bulunamadı.");
+    }
+
     const parsed = parser.parse(xml) as Record<string, unknown>;
     const sourceRows = buildSourceRows(parsed);
     const preparedRows = await prepareImportRows(storeId, sourceRows);

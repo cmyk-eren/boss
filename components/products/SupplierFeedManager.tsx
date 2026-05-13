@@ -1,7 +1,15 @@
 "use client";
 
-import { ChevronDown, ChevronUp, ExternalLink, RefreshCw, Send, UploadCloud } from "lucide-react";
-import { Fragment, useState } from "react";
+import {
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  FileText,
+  RefreshCw,
+  Send,
+  UploadCloud,
+} from "lucide-react";
+import { Fragment, useRef, useState } from "react";
 
 import { formatCurrency, formatNumber } from "@/lib/utils";
 
@@ -130,6 +138,9 @@ export function SupplierFeedManager({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [loadingList, setLoadingList] = useState(false);
+  const [xmlContent, setXmlContent] = useState("");
+  const [xmlFileName, setXmlFileName] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [form, setForm] = useState({
     name: initialData.feed?.name ?? "Royal Tedarik XML",
     sourceUrl: initialData.feed?.sourceUrl ?? initialSourceUrl ?? "",
@@ -173,35 +184,41 @@ export function SupplierFeedManager({
       setMessage(null);
       setError(null);
 
-      const response = await fetch(`/api/stores/${storeId}/supplier-feed/sync`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: form.name,
-          sourceUrl: form.sourceUrl,
-          defaultCargoCompanyId: form.defaultCargoCompanyId
-            ? Number(form.defaultCargoCompanyId)
-            : null,
-          defaultShipmentAddressId: form.defaultShipmentAddressId
-            ? Number(form.defaultShipmentAddressId)
-            : null,
-          defaultReturningAddressId: form.defaultReturningAddressId
-            ? Number(form.defaultReturningAddressId)
-            : null,
-          defaultDeliveryDuration: form.defaultDeliveryDuration
-            ? Number(form.defaultDeliveryDuration)
-            : null,
-        }),
-      });
-      const payload = await response.json();
+      const payload = new FormData();
+      payload.set("name", form.name);
+      payload.set("sourceUrl", form.sourceUrl);
+      payload.set("defaultCargoCompanyId", form.defaultCargoCompanyId);
+      payload.set("defaultShipmentAddressId", form.defaultShipmentAddressId);
+      payload.set("defaultReturningAddressId", form.defaultReturningAddressId);
+      payload.set("defaultDeliveryDuration", form.defaultDeliveryDuration);
 
-      if (!response.ok) {
-        throw new Error(payload.error ?? "XML içe aktarma başarısız.");
+      if (xmlContent.trim()) {
+        payload.set("xmlContent", xmlContent.trim());
       }
 
-      setMessage(`${payload.importedCount} ürün XML feed’den hazırlandı.`);
+      const file = fileInputRef.current?.files?.[0];
+
+      if (file) {
+        payload.set("xmlFile", file);
+      }
+
+      const response = await fetch(`/api/stores/${storeId}/supplier-feed/sync`, {
+        method: "POST",
+        body: payload,
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error ?? "XML içe aktarma başarısız.");
+      }
+
+      setMessage(
+        `${result.importedCount} ürün XML feed’den hazırlandı.${
+          file || xmlContent.trim()
+            ? " Tedarikçi sunucusu engeli için yerel XML fallback kullanıldı."
+            : ""
+        }`,
+      );
       await loadProducts(1, search);
     } catch (syncError) {
       setError(syncError instanceof Error ? syncError.message : "XML aktarımı başarısız.");
@@ -359,6 +376,62 @@ export function SupplierFeedManager({
                 }
                 className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700"
                 placeholder="https://www.royaltedarik.com/export/..."
+              />
+              <p className="text-xs text-slate-400">
+                Bazi tedarikci sunuculari hosting IP&apos;lerini engelleyebilir. Boyle bir durumda
+                asagidaki dosya veya XML icerigi alanini kullanabilirsiniz.
+              </p>
+            </label>
+            <label className="space-y-2 sm:col-span-2">
+              <span className="text-sm font-medium text-slate-700">XML dosyasi yukle</span>
+              <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3 text-sm text-slate-600">
+                  <FileText className="h-4 w-4 text-slate-400" />
+                  <span>{xmlFileName ?? "Henüz XML dosyasi secilmedi"}</span>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".xml,text/xml,application/xml"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      setXmlFileName(file?.name ?? null);
+                    }}
+                    className="hidden"
+                    id="supplier-xml-file"
+                  />
+                  <label
+                    htmlFor="supplier-xml-file"
+                    className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600"
+                  >
+                    <UploadCloud className="h-4 w-4" />
+                    Dosya Sec
+                  </label>
+                  {xmlFileName ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = "";
+                        }
+                        setXmlFileName(null);
+                      }}
+                      className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-500"
+                    >
+                      Temizle
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </label>
+            <label className="space-y-2 sm:col-span-2">
+              <span className="text-sm font-medium text-slate-700">XML icerigi yapistir</span>
+              <textarea
+                value={xmlContent}
+                onChange={(event) => setXmlContent(event.target.value)}
+                className="min-h-[180px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-mono text-xs text-slate-700"
+                placeholder="<products>...</products>"
               />
             </label>
             <label className="space-y-2">
