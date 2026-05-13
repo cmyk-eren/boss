@@ -12,7 +12,7 @@ export default async function LoginPage({
         <section className="relative hidden bg-[#0f2a68] px-10 py-12 text-white lg:flex lg:flex-col lg:justify-between">
           <div className="space-y-6">
             <span className="inline-flex rounded-full bg-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-blue-100">
-              Mavikon Panel
+              BOSS Panel
             </span>
             <div className="space-y-4">
               <h1 className="max-w-md font-heading text-4xl font-bold leading-tight">

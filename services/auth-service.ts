@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 
-const SESSION_COOKIE = "mavikon_session";
+const SESSION_COOKIE = "boss_session";
 
 type SessionPayload = {
   sub: string;

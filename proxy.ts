@@ -22,7 +22,7 @@ const protectedPrefixes = [
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const hasSession = Boolean(request.cookies.get("mavikon_session")?.value);
+  const hasSession = Boolean(request.cookies.get("boss_session")?.value);
 
   if (pathname.startsWith("/api/auth")) {
     return NextResponse.next();

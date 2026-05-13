@@ -31,7 +31,7 @@ export default async function MavibotPage({
   return (
     <div className="space-y-6">
       <Header
-        title="Mavibot"
+        title="BOSS Bot"
         stores={context.stores}
         currentStoreId={context.activeStoreId}
         notificationCount={context.notificationCount}

@@ -24,7 +24,7 @@ export function TrendyolConnectForm() {
           name="name"
           required
           className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm"
-          placeholder="Mavikon Trendyol Mağazası"
+          placeholder="BOSS Trendyol Mağazası"
         />
       </label>
       <div className="grid gap-4 sm:grid-cols-2">

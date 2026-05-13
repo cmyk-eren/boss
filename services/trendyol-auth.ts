@@ -40,7 +40,7 @@ export function buildTrendyolHeaders(input: {
 
   return {
     Authorization: `Basic ${authorization}`,
-    "User-Agent": `${input.supplierId} - Mavikon`,
+    "User-Agent": `${input.supplierId} - BOSS`,
     "Content-Type": "application/json",
     ...(input.storeFrontCode ? { storeFrontCode: input.storeFrontCode } : {}),
   };

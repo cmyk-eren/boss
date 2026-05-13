@@ -1,4 +1,4 @@
-# Mavikon Trendyol Paneli
+# BOSS Trendyol Paneli
 
 Trendyol saticilari icin gelistirilmis, gercek veri odakli Next.js SaaS paneli.
 

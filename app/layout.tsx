@@ -19,7 +19,7 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mavikon | Trendyol Satıcı Paneli",
+  title: "BOSS | Trendyol Satıcı Paneli",
   description:
     "Trendyol mağaza sahipleri için gerçek sipariş, ciro, kâr ve ürün performansı takibi.",
 };
