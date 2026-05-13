@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 
+import { buildAppUrl } from "@/lib/env";
 import { clearSession } from "@/services/auth-service";
 
-export async function POST(request: Request) {
+export async function POST() {
   await clearSession();
-  return NextResponse.redirect(new URL("/login", request.url), 303);
+  return NextResponse.redirect(buildAppUrl("/login"), 303);
 }

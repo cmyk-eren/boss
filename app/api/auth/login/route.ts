@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { formatAuthError } from "@/lib/auth-errors";
+import { buildAppUrl } from "@/lib/env";
 import { loginUser } from "@/services/auth-service";
 
 export async function POST(request: Request) {
@@ -7,11 +9,11 @@ export async function POST(request: Request) {
 
   try {
     await loginUser(String(formData.get("email") ?? ""), String(formData.get("password") ?? ""));
-    return NextResponse.redirect(new URL("/dashboard", request.url), 303);
+    return NextResponse.redirect(buildAppUrl("/dashboard"), 303);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Giriş başarısız.";
+    const message = formatAuthError(error, "Giris basarisiz.");
     return NextResponse.redirect(
-      new URL(`/login?error=${encodeURIComponent(message)}`, request.url),
+      buildAppUrl(`/login?error=${encodeURIComponent(message)}`),
       303,
     );
   }

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { formatAuthError } from "@/lib/auth-errors";
+import { buildAppUrl } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { registerUser } from "@/services/auth-service";
 
@@ -23,11 +25,11 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.redirect(new URL("/dashboard", request.url), 303);
+    return NextResponse.redirect(buildAppUrl("/dashboard"), 303);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Kayıt başarısız.";
+    const message = formatAuthError(error, "Kayit basarisiz.");
     return NextResponse.redirect(
-      new URL(`/register?error=${encodeURIComponent(message)}`, request.url),
+      buildAppUrl(`/register?error=${encodeURIComponent(message)}`),
       303,
     );
   }

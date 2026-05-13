@@ -1,6 +1,7 @@
 import { TrendyolEnvironment } from "@prisma/client";
 import { NextResponse } from "next/server";
 
+import { buildAppUrl } from "@/lib/env";
 import { formatTrendyolError } from "@/lib/trendyol-errors";
 import { createNotification } from "@/services/notification-service";
 import { requireApiUser } from "@/services/auth-service";
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.redirect(
-      new URL(`/integrations/trendyol?storeId=${store.id}`, request.url),
+      buildAppUrl(`/integrations/trendyol?storeId=${store.id}`),
       303,
     );
   } catch (error) {
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
         ? formatTrendyolError(error.message)
         : "Trendyol bağlantısı doğrulanamadı.";
     return NextResponse.redirect(
-      new URL(`/integrations/trendyol?error=${encodeURIComponent(message)}`, request.url),
+      buildAppUrl(`/integrations/trendyol?error=${encodeURIComponent(message)}`),
       303,
     );
   }
