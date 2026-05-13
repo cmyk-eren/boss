@@ -106,6 +106,72 @@ const parser = new XMLParser({
   processEntities: true,
 });
 
+const XML_FETCH_TIMEOUT_MS = 30_000;
+
+function buildXmlFetchHeaders(sourceUrl: string) {
+  const url = new URL(sourceUrl);
+
+  return {
+    Accept: "application/xml,text/xml,application/xhtml+xml,text/html;q=0.9,*/*;q=0.8",
+    "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Cache-Control": "no-cache",
+    Pragma: "no-cache",
+    Referer: `${url.origin}/`,
+    Origin: url.origin,
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "same-origin",
+    "Sec-Fetch-User": "?1",
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+  };
+}
+
+async function fetchXmlSource(sourceUrl: string) {
+  const headers = buildXmlFetchHeaders(sourceUrl);
+  const attempts = [
+    { label: "browser-headers", headers },
+    {
+      label: "browser-headers-with-cookie-accept",
+      headers: {
+        ...headers,
+        Cookie: "",
+      },
+    },
+  ];
+
+  let lastError: Error | null = null;
+
+  for (const attempt of attempts) {
+    try {
+      const response = await fetch(sourceUrl, {
+        cache: "no-store",
+        redirect: "follow",
+        headers: attempt.headers,
+        signal: AbortSignal.timeout(XML_FETCH_TIMEOUT_MS),
+      });
+
+      if (!response.ok) {
+        throw new Error(`XML kaynağına erişilemedi. HTTP ${response.status}`);
+      }
+
+      const xml = await response.text();
+
+      if (!xml.trim()) {
+        throw new Error("XML kaynağı boş cevap döndü.");
+      }
+
+      return xml;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("XML fetch başarısız.");
+      console.error("[BOSS] XML fetch attempt failed:", attempt.label, lastError.message);
+    }
+  }
+
+  throw lastError ?? new Error("XML kaynağına erişilemedi.");
+}
+
 function asArray<T>(value: T | T[] | null | undefined): T[] {
   if (Array.isArray(value)) {
     return value;
@@ -550,18 +616,7 @@ export async function syncSupplierFeed(
   });
 
   try {
-    const response = await fetch(sourceUrl, {
-      cache: "no-store",
-      headers: {
-        Accept: "application/xml,text/xml;q=0.9,*/*;q=0.8",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`XML kaynağına erişilemedi. HTTP ${response.status}`);
-    }
-
-    const xml = await response.text();
+    const xml = await fetchXmlSource(sourceUrl);
     const parsed = parser.parse(xml) as Record<string, unknown>;
     const sourceRows = buildSourceRows(parsed);
     const preparedRows = await prepareImportRows(storeId, sourceRows);
