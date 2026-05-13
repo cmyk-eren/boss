@@ -1,0 +1,355 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum StorePlatform {
+  TRENDYOL
+}
+
+enum TrendyolEnvironment {
+  PROD
+  STAGE
+}
+
+enum IntegrationStatus {
+  CONNECTED
+  ERROR
+  DISCONNECTED
+}
+
+enum CostSource {
+  MANUAL
+  IMPORT
+  SYNC
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
+
+enum SyncDirection {
+  IMPORT
+  EXPORT
+}
+
+enum SyncScope {
+  ALL
+  ORDERS
+  PRODUCTS
+  INVENTORY
+}
+
+enum SyncStatus {
+  STARTED
+  SUCCESS
+  FAILED
+}
+
+enum SupplierFeedStatus {
+  ACTIVE
+  ERROR
+}
+
+enum SupplierProductExportStatus {
+  DRAFT
+  READY
+  QUEUED
+  SYNCED
+  FAILED
+}
+
+enum SubscriptionPlan {
+  STARTER
+  GROWTH
+  SCALE
+}
+
+model User {
+  id            String           @id @default(cuid())
+  email         String           @unique
+  passwordHash  String
+  name          String?
+  plan          SubscriptionPlan @default(STARTER)
+  timezone      String           @default("Europe/Istanbul")
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  stores        Store[]
+  notifications Notification[]
+}
+
+model Store {
+  id              String               @id @default(cuid())
+  userId          String
+  name            String
+  platform        StorePlatform        @default(TRENDYOL)
+  supplierId      String
+  storeFrontCode  String               @default("TR")
+  currency        String               @default("TRY")
+  isActive        Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  integration     TrendyolIntegration?
+  products        Product[]
+  orders          Order[]
+  productCosts    ProductCost[]
+  commissionRates CommissionRate[]
+  snapshots       DashboardSnapshot[]
+  syncLogs        SyncLog[]
+  supplierFeeds   SupplierFeed[]
+  supplierProducts SupplierFeedProduct[]
+
+  @@index([userId])
+}
+
+model TrendyolIntegration {
+  id                   String              @id @default(cuid())
+  storeId              String              @unique
+  apiKeyEncrypted      String
+  apiSecretEncrypted   String
+  environment          TrendyolEnvironment @default(PROD)
+  status               IntegrationStatus   @default(CONNECTED)
+  lastSyncAt           DateTime?
+  lastSuccessfulSyncAt DateTime?
+  lastError            String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  store                Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
+}
+
+model Product {
+  id           String        @id @default(cuid())
+  storeId      String
+  externalId   String?
+  barcode      String
+  sku          String?
+  title        String
+  categoryName String?
+  brand        String?
+  listPrice    Decimal       @default(0)
+  salePrice    Decimal       @default(0)
+  quantity     Int           @default(0)
+  status       String?
+  imageUrl     String?
+  lastSyncedAt DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  store        Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  costs        ProductCost[]
+  orderItems   OrderItem[]
+
+  @@unique([storeId, barcode])
+  @@index([storeId, categoryName])
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  storeId         String
+  externalId      String
+  orderNumber     String
+  status          String
+  orderDate       DateTime
+  lastModifiedAt  DateTime
+  grossAmount     Decimal     @default(0)
+  totalDiscount   Decimal     @default(0)
+  totalPrice      Decimal     @default(0)
+  cargoPrice      Decimal     @default(0)
+  serviceFee      Decimal     @default(0)
+  commissionTotal Decimal     @default(0)
+  otherCosts      Decimal     @default(0)
+  estimatedProfit Decimal     @default(0)
+  customerName    String?
+  lineCount       Int         @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  store           Store       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  items           OrderItem[]
+
+  @@unique([storeId, externalId])
+  @@index([storeId, orderDate])
+  @@index([storeId, status])
+}
+
+model OrderItem {
+  id                String   @id @default(cuid())
+  orderId           String
+  productId         String?
+  barcode           String
+  merchantSku       String?
+  title             String
+  quantity          Int      @default(1)
+  unitPrice         Decimal  @default(0)
+  lineRevenue       Decimal  @default(0)
+  commissionRate    Decimal  @default(0)
+  commissionAmount  Decimal  @default(0)
+  shippingCost      Decimal  @default(0)
+  serviceFee        Decimal  @default(0)
+  productCostAmount Decimal  @default(0)
+  otherCosts        Decimal  @default(0)
+  estimatedProfit   Decimal  @default(0)
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product           Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([barcode])
+}
+
+model ProductCost {
+  id            String     @id @default(cuid())
+  storeId       String
+  productId     String
+  cost          Decimal
+  source        CostSource @default(MANUAL)
+  notes         String?
+  effectiveFrom DateTime   @default(now())
+  createdAt     DateTime   @default(now())
+  store         Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  product       Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, effectiveFrom])
+  @@index([productId, effectiveFrom])
+}
+
+model CommissionRate {
+  id           String   @id @default(cuid())
+  storeId      String
+  categoryCode String?
+  categoryName String
+  rate         Decimal  @default(0)
+  shippingCost Decimal  @default(0)
+  serviceFee   Decimal  @default(0)
+  otherCosts   Decimal  @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, categoryName])
+  @@index([storeId])
+}
+
+model DashboardSnapshot {
+  id              String   @id @default(cuid())
+  storeId         String
+  date            DateTime
+  rangeKey        String
+  ordersCount     Int
+  revenue         Decimal  @default(0)
+  estimatedProfit Decimal  @default(0)
+  averageBasket   Decimal  @default(0)
+  topProductsJson Json?
+  createdAt       DateTime @default(now())
+  store           Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, date])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model SyncLog {
+  id            String        @id @default(cuid())
+  storeId       String
+  direction     SyncDirection @default(IMPORT)
+  scope         SyncScope
+  status        SyncStatus
+  startedAt     DateTime      @default(now())
+  finishedAt    DateTime?
+  recordsSynced Int           @default(0)
+  errorMessage  String?
+  metadata      Json?
+  createdAt     DateTime      @default(now())
+  store         Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, createdAt])
+}
+
+model SupplierFeed {
+  id                   String             @id @default(cuid())
+  storeId              String
+  name                 String
+  sourceUrl            String
+  defaultCargoCompanyId Int?
+  defaultShipmentAddressId Int?
+  defaultReturningAddressId Int?
+  defaultDeliveryDuration Int?
+  status               SupplierFeedStatus @default(ACTIVE)
+  lastSyncAt           DateTime?
+  lastSuccessfulSyncAt DateTime?
+  lastError            String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  store                Store              @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  products             SupplierFeedProduct[]
+
+  @@unique([storeId, sourceUrl])
+  @@index([storeId, createdAt])
+}
+
+model SupplierFeedProduct {
+  id                 String                      @id @default(cuid())
+  storeId            String
+  feedId             String
+  sourceProductId    String?
+  productCode        String?
+  barcode            String
+  parentBarcode      String?
+  title              String
+  description        String?
+  detailHtml         String?
+  categoryPath       String?
+  supplierCategoryId String?
+  supplierBrandId    String?
+  brandName          String?
+  listPrice          Decimal                     @default(0)
+  salePrice          Decimal                     @default(0)
+  vatRate            Decimal                     @default(0)
+  currency           String                      @default("TRY")
+  quantity           Int                         @default(0)
+  desi               Decimal                     @default(0)
+  imageUrlsJson      Json?
+  variantName1       String?
+  variantValue1      String?
+  variantName2       String?
+  variantValue2      String?
+  selectedForExport  Boolean                     @default(false)
+  isActive           Boolean                     @default(true)
+  trendyolCategoryId Int?
+  trendyolCategoryName String?
+  trendyolBrandId    Int?
+  productMainId      String?
+  stockCode          String?
+  dimensionalWeight  Decimal                     @default(1)
+  originCode         String                      @default("TR")
+  attributesJson     Json?
+  exportStatus       SupplierProductExportStatus @default(DRAFT)
+  exportMessage      String?
+  lastFetchedAt      DateTime?
+  lastExportedAt     DateTime?
+  createdAt          DateTime                    @default(now())
+  updatedAt          DateTime                    @updatedAt
+  store              Store                       @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  feed               SupplierFeed                @relation(fields: [feedId], references: [id], onDelete: Cascade)
+
+  @@unique([feedId, barcode])
+  @@index([storeId, selectedForExport])
+  @@index([storeId, exportStatus])
+  @@index([storeId, isActive])
+}

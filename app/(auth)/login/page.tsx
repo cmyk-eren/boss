@@ -1,0 +1,93 @@
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const error = Array.isArray(params.error) ? params.error[0] : params.error;
+
+  return (
+    <main className="flex min-h-screen items-center justify-center px-6 py-12">
+      <div className="card-shadow grid w-full max-w-5xl overflow-hidden rounded-[32px] bg-white lg:grid-cols-[1.1fr_0.9fr]">
+        <section className="relative hidden bg-[#0f2a68] px-10 py-12 text-white lg:flex lg:flex-col lg:justify-between">
+          <div className="space-y-6">
+            <span className="inline-flex rounded-full bg-white/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-blue-100">
+              Mavikon Panel
+            </span>
+            <div className="space-y-4">
+              <h1 className="max-w-md font-heading text-4xl font-bold leading-tight">
+                Trendyol performansınızı tek merkezden yönetin.
+              </h1>
+              <p className="max-w-md text-sm leading-7 text-blue-100/88">
+                Siparişler, kârlılık, stok, fiyat ve kategori bazlı komisyon yönetimi
+                aynı ekranda birleşir.
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-4 text-sm text-blue-50">
+            <div className="rounded-3xl border border-white/10 bg-white/6 p-5">
+              Gerçek Trendyol mağaza verileriyle çalışacak şekilde tasarlanmıştır.
+            </div>
+            <div className="rounded-3xl border border-white/10 bg-white/6 p-5">
+              API anahtarları yalnızca sunucu tarafında şifreli saklanır.
+            </div>
+          </div>
+        </section>
+        <section className="px-6 py-8 sm:px-10 sm:py-10">
+          <div className="mx-auto max-w-md space-y-8">
+            <div className="space-y-3">
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[#2f6bff]">
+                Giriş
+              </p>
+              <div className="space-y-2">
+                <h2 className="font-heading text-3xl font-bold text-slate-900">
+                  Hesabınıza giriş yapın
+                </h2>
+                <p className="text-sm leading-6 text-slate-500">
+                  Mağazalarınızın sipariş, ciro ve kârlılık görünümüne erişin.
+                </p>
+              </div>
+            </div>
+            <form action="/api/auth/login" method="post" className="space-y-4">
+              <label className="block space-y-2">
+                <span className="text-sm font-medium text-slate-700">E-posta</span>
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 transition focus:border-[#2f6bff] focus:bg-white"
+                  placeholder="ornek@magaza.com"
+                />
+              </label>
+              <label className="block space-y-2">
+                <span className="text-sm font-medium text-slate-700">Şifre</span>
+                <input
+                  name="password"
+                  type="password"
+                  required
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 transition focus:border-[#2f6bff] focus:bg-white"
+                  placeholder="••••••••"
+                />
+              </label>
+              <button
+                type="submit"
+                className="w-full rounded-2xl bg-[#2f6bff] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#2158d9]"
+              >
+                Giriş Yap
+              </button>
+            </form>
+            {error ? (
+              <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>
+            ) : null}
+            <p className="text-sm text-slate-500">
+              Hesabınız yok mu?{" "}
+              <a className="font-semibold text-[#2f6bff]" href="/register">
+                Yeni hesap oluşturun
+              </a>
+            </p>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}

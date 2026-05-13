@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+:root {
+  --background: #eef3f8;
+  --foreground: #0f172a;
+  --muted: #6b7280;
+  --border: #d7e1ec;
+  --card: #ffffff;
+  --accent: #2f6bff;
+  --accent-soft: #eaf1ff;
+  --success: #0f9d73;
+  --danger: #ef4444;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --font-sans: var(--font-jakarta);
+  --font-mono: var(--font-mono);
+  --font-heading: var(--font-heading);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top left, rgba(47, 107, 255, 0.08), transparent 20%),
+    linear-gradient(180deg, #f6f9fc 0%, #eef3f8 100%);
+  color: var(--foreground);
+}
+
+body {
+  font-family: var(--font-jakarta), sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  outline: none;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #c3d1e5;
+}
+
+.card-shadow {
+  box-shadow: 0 20px 45px -28px rgba(15, 23, 42, 0.28);
+}
