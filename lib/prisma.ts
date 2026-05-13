@@ -58,6 +58,14 @@ function getDbConfig(): DbConfig {
 function createMariaDbAdapter() {
   const config = getDbConfig();
 
+  console.log("[BOSS] DB config:", {
+    host: config.host,
+    port: config.port,
+    user: config.user,
+    database: config.database,
+    passwordPresent: Boolean(config.password),
+  });
+
   return new PrismaMariaDb({
     host: config.host,
     port: config.port,

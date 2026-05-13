@@ -11,6 +11,7 @@ export async function POST(request: Request) {
     await loginUser(String(formData.get("email") ?? ""), String(formData.get("password") ?? ""));
     return NextResponse.redirect(buildAppUrl("/dashboard"), 303);
   } catch (error) {
+    console.error("[BOSS] Login failed:", error);
     const message = formatAuthError(error, "Giris basarisiz.");
     return NextResponse.redirect(
       buildAppUrl(`/login?error=${encodeURIComponent(message)}`),

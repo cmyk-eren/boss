@@ -27,6 +27,7 @@ export async function POST(request: Request) {
 
     return NextResponse.redirect(buildAppUrl("/dashboard"), 303);
   } catch (error) {
+    console.error("[BOSS] Register failed:", error);
     const message = formatAuthError(error, "Kayit basarisiz.");
     return NextResponse.redirect(
       buildAppUrl(`/register?error=${encodeURIComponent(message)}`),
