@@ -24,6 +24,8 @@ export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSession = Boolean(request.cookies.get("boss_session")?.value);
 
+  console.log("[BOSS] Request:", pathname, "session:", hasSession);
+
   if (pathname.startsWith("/api/auth")) {
     return NextResponse.next();
   }
