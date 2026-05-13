@@ -1,10 +1,4 @@
-export default async function RegisterPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const params = await searchParams;
-  const error = Array.isArray(params.error) ? params.error[0] : params.error;
+export default function RegisterPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-12">
@@ -69,9 +63,6 @@ export default async function RegisterPage({
               Hesap Olustur
             </button>
           </form>
-          {error ? (
-            <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>
-          ) : null}
           <p className="text-sm text-slate-500">
             Zaten hesabinız var mi?{" "}
             <a className="font-semibold text-[#2f6bff]" href="/login">
